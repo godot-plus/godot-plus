@@ -74,6 +74,12 @@ void Camera2D::_update_process_mode() {
 	if (is_physics_interpolated_and_enabled()) {
 		set_process_internal(is_current());
 		set_physics_process_internal(is_current());
+
+#ifdef TOOLS_ENABLED
+		if (process_mode == CAMERA2D_PROCESS_IDLE) {
+			WARN_PRINT_ONCE("Camera2D overridden to physics process mode due to use of physics interpolation.");
+		}
+#endif
 	} else {
 		// smoothing can be enabled in the editor but will never be active
 		if (process_mode == CAMERA2D_PROCESS_IDLE) {
@@ -188,7 +194,11 @@ Transform2D Camera2D::get_camera_transform() {
 		}
 
 		if (smoothing_active) {
-			float c = smoothing * (process_mode == CAMERA2D_PROCESS_PHYSICS ? get_physics_process_delta_time() : get_process_delta_time());
+			// Note that if we are using physics interpolation,
+			// processing will always be physics based (it ignores the process mode set in the UI).
+			bool physics_process = (process_mode == CAMERA2D_PROCESS_PHYSICS) || is_physics_interpolated_and_enabled();
+			float delta = physics_process ? get_physics_process_delta_time() : get_process_delta_time();
+			float c = smoothing * delta;
 			smoothed_camera_pos = ((camera_pos - smoothed_camera_pos) * c) + smoothed_camera_pos;
 			ret_camera_pos = smoothed_camera_pos;
 		} else {

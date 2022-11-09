@@ -473,7 +473,6 @@ void VisualServerCanvas::_render_canvas_item_cull_by_node(Item *p_canvas_item, c
 		real_t f = Engine::get_singleton()->get_physics_interpolation_fraction();
 		TransformInterpolator::interpolate_transform2D(ci->xform_prev, ci->xform_curr, final_xform, f);
 	}
-
 	final_xform = p_transform * final_xform;
 
 	Rect2 global_rect = final_xform.xform(rect);
@@ -1477,6 +1476,32 @@ Rect2 VisualServerCanvas::_debug_canvas_item_get_local_bound(RID p_item) {
 	return canvas_item->local_bound;
 }
 
+void VisualServerCanvas::canvas_item_set_skeleton_relative_xform(RID p_item, Transform2D p_relative_xform) {
+	Item *canvas_item = canvas_item_owner.getornull(p_item);
+	ERR_FAIL_COND(!canvas_item);
+
+	if (!canvas_item->skinning_data) {
+		canvas_item->skinning_data = memnew(Item::SkinningData);
+	}
+	canvas_item->skinning_data->skeleton_relative_xform = p_relative_xform;
+	canvas_item->skinning_data->skeleton_relative_xform_inv = p_relative_xform.affine_inverse();
+
+	// Set any Polygon2Ds pre-calced bone bounds to dirty.
+	for (int n = 0; n < canvas_item->commands.size(); n++) {
+		Item::Command *c = canvas_item->commands[n];
+		if (c->type == Item::Command::TYPE_POLYGON) {
+			Item::CommandPolygon *polygon = static_cast<Item::CommandPolygon *>(c);
+
+			// Make sure skinning data is present.
+			if (!polygon->skinning_data) {
+				polygon->skinning_data = memnew(Item::CommandPolygon::SkinningData);
+			}
+
+			polygon->skinning_data->dirty = true;
+		}
+	}
+}
+
 // Useful especially for origin shifting.
 void VisualServerCanvas::canvas_item_transform_physics_interpolation(RID p_item, Transform2D p_transform) {
 	Item *canvas_item = canvas_item_owner.getornull(p_item);
@@ -1533,32 +1558,6 @@ void VisualServerCanvas::canvas_light_occluder_transform_physics_interpolation(R
 	ERR_FAIL_COND(!occluder);
 	occluder->xform_prev = p_transform * occluder->xform_prev;
 	occluder->xform_curr = p_transform * occluder->xform_curr;
-}
-
-void VisualServerCanvas::canvas_item_set_skeleton_relative_xform(RID p_item, Transform2D p_relative_xform) {
-	Item *canvas_item = canvas_item_owner.getornull(p_item);
-	ERR_FAIL_COND(!canvas_item);
-
-	if (!canvas_item->skinning_data) {
-		canvas_item->skinning_data = memnew(Item::SkinningData);
-	}
-	canvas_item->skinning_data->skeleton_relative_xform = p_relative_xform;
-	canvas_item->skinning_data->skeleton_relative_xform_inv = p_relative_xform.affine_inverse();
-
-	// Set any Polygon2Ds pre-calced bone bounds to dirty.
-	for (int n = 0; n < canvas_item->commands.size(); n++) {
-		Item::Command *c = canvas_item->commands[n];
-		if (c->type == Item::Command::TYPE_POLYGON) {
-			Item::CommandPolygon *polygon = static_cast<Item::CommandPolygon *>(c);
-
-			// Make sure skinning data is present.
-			if (!polygon->skinning_data) {
-				polygon->skinning_data = memnew(Item::CommandPolygon::SkinningData);
-			}
-
-			polygon->skinning_data->dirty = true;
-		}
-	}
 }
 
 void VisualServerCanvas::canvas_item_attach_skeleton(RID p_item, RID p_skeleton) {
