@@ -616,20 +616,18 @@ public:
 	FUNC2(canvas_item_set_z_index, RID, int)
 	FUNC2(canvas_item_set_z_as_relative_to_parent, RID, bool)
 	FUNC3(canvas_item_set_copy_to_backbuffer, RID, bool, const Rect2 &)
-	FUNC2(canvas_item_set_interpolated, RID, bool)
-	FUNC1(canvas_item_reset_physics_interpolation, RID)
-	FUNC2(canvas_item_transform_physics_interpolation, RID, Transform2D)
+	FUNC1(canvas_item_clear, RID)
+	FUNC2(canvas_item_set_draw_index, RID, int)
+	FUNC2(canvas_item_set_material, RID, RID)
+	FUNC2(canvas_item_set_use_parent_material, RID, bool)
 
 	FUNC2(canvas_item_attach_skeleton, RID, RID)
 	FUNC2(canvas_item_set_skeleton_relative_xform, RID, Transform2D)
 	FUNC1R(Rect2, _debug_canvas_item_get_rect, RID)
 
-	FUNC1(canvas_item_clear, RID)
-	FUNC2(canvas_item_set_draw_index, RID, int)
-
-	FUNC2(canvas_item_set_material, RID, RID)
-
-	FUNC2(canvas_item_set_use_parent_material, RID, bool)
+	FUNC2(canvas_item_set_interpolated, RID, bool)
+	FUNC1(canvas_item_reset_physics_interpolation, RID)
+	FUNC2(canvas_item_transform_physics_interpolation, RID, Transform2D)
 
 	FUNC0R(RID, canvas_light_create)
 	FUNC2(canvas_light_attach_to_canvas, RID, RID)
@@ -655,12 +653,20 @@ public:
 	FUNC2(canvas_light_set_shadow_color, RID, const Color &)
 	FUNC2(canvas_light_set_shadow_smooth, RID, float)
 
+	FUNC2(canvas_light_set_interpolated, RID, bool)
+	FUNC1(canvas_light_reset_physics_interpolation, RID)
+	FUNC2(canvas_light_transform_physics_interpolation, RID, Transform2D)
+
 	FUNCRID(canvas_light_occluder)
 	FUNC2(canvas_light_occluder_attach_to_canvas, RID, RID)
 	FUNC2(canvas_light_occluder_set_enabled, RID, bool)
 	FUNC2(canvas_light_occluder_set_polygon, RID, RID)
 	FUNC2(canvas_light_occluder_set_transform, RID, const Transform2D &)
 	FUNC2(canvas_light_occluder_set_light_mask, RID, int)
+
+	FUNC2(canvas_light_occluder_set_interpolated, RID, bool)
+	FUNC1(canvas_light_occluder_reset_physics_interpolation, RID)
+	FUNC2(canvas_light_occluder_transform_physics_interpolation, RID, Transform2D)
 
 	FUNCRID(canvas_occluder_polygon)
 	FUNC3(canvas_occluder_polygon_set_shape, RID, const PoolVector<Vector2> &, bool)

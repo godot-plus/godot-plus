@@ -1462,7 +1462,6 @@ void VisualServerCanvas::canvas_item_set_skeleton_relative_xform(RID p_item, Tra
 void VisualServerCanvas::canvas_item_transform_physics_interpolation(RID p_item, Transform2D p_transform) {
 	Item *canvas_item = canvas_item_owner.getornull(p_item);
 	ERR_FAIL_COND(!canvas_item);
-
 	canvas_item->xform_prev = p_transform * canvas_item->xform_prev;
 	canvas_item->xform_curr = p_transform * canvas_item->xform_curr;
 }
@@ -1470,7 +1469,6 @@ void VisualServerCanvas::canvas_item_transform_physics_interpolation(RID p_item,
 void VisualServerCanvas::canvas_item_reset_physics_interpolation(RID p_item) {
 	Item *canvas_item = canvas_item_owner.getornull(p_item);
 	ERR_FAIL_COND(!canvas_item);
-
 	canvas_item->xform_prev = canvas_item->xform_curr;
 }
 
@@ -1478,6 +1476,44 @@ void VisualServerCanvas::canvas_item_set_interpolated(RID p_item, bool p_interpo
 	Item *canvas_item = canvas_item_owner.getornull(p_item);
 	ERR_FAIL_COND(!canvas_item);
 	canvas_item->interpolated = p_interpolated;
+}
+
+void VisualServerCanvas::canvas_light_set_interpolated(RID p_light, bool p_interpolated) {
+	RasterizerCanvas::Light *clight = canvas_light_owner.get(p_light);
+	ERR_FAIL_COND(!clight);
+	clight->interpolated = p_interpolated;
+}
+
+void VisualServerCanvas::canvas_light_reset_physics_interpolation(RID p_light) {
+	RasterizerCanvas::Light *clight = canvas_light_owner.get(p_light);
+	ERR_FAIL_COND(!clight);
+	clight->xform_prev = clight->xform_curr;
+}
+
+void VisualServerCanvas::canvas_light_transform_physics_interpolation(RID p_light, Transform2D p_transform) {
+	RasterizerCanvas::Light *clight = canvas_light_owner.get(p_light);
+	ERR_FAIL_COND(!clight);
+	clight->xform_prev = p_transform * clight->xform_prev;
+	clight->xform_curr = p_transform * clight->xform_curr;
+}
+
+void VisualServerCanvas::canvas_light_occluder_set_interpolated(RID p_occluder, bool p_interpolated) {
+	RasterizerCanvas::LightOccluderInstance *occluder = canvas_light_occluder_owner.get(p_occluder);
+	ERR_FAIL_COND(!occluder);
+	occluder->interpolated = p_interpolated;
+}
+
+void VisualServerCanvas::canvas_light_occluder_reset_physics_interpolation(RID p_occluder) {
+	RasterizerCanvas::LightOccluderInstance *occluder = canvas_light_occluder_owner.get(p_occluder);
+	ERR_FAIL_COND(!occluder);
+	occluder->xform_prev = occluder->xform_curr;
+}
+
+void VisualServerCanvas::canvas_light_occluder_transform_physics_interpolation(RID p_occluder, Transform2D p_transform) {
+	RasterizerCanvas::LightOccluderInstance *occluder = canvas_light_occluder_owner.get(p_occluder);
+	ERR_FAIL_COND(!occluder);
+	occluder->xform_prev = p_transform * occluder->xform_prev;
+	occluder->xform_curr = p_transform * occluder->xform_curr;
 }
 
 void VisualServerCanvas::canvas_item_attach_skeleton(RID p_item, RID p_skeleton) {
@@ -1618,7 +1654,16 @@ void VisualServerCanvas::canvas_light_set_transform(RID p_light, const Transform
 	RasterizerCanvas::Light *clight = canvas_light_owner.get(p_light);
 	ERR_FAIL_COND(!clight);
 
-	clight->xform = p_transform;
+	if (_interpolation_data.interpolation_enabled && clight->interpolated) {
+		if (!clight->on_interpolate_transform_list) {
+			_interpolation_data.canvas_light_transform_update_list_curr->push_back(p_light);
+			clight->on_interpolate_transform_list = true;
+		} else {
+			DEV_ASSERT(_interpolation_data.canvas_light_transform_update_list_curr->size());
+		}
+	}
+
+	clight->xform_curr = p_transform;
 }
 void VisualServerCanvas::canvas_light_set_texture(RID p_light, RID p_texture) {
 	RasterizerCanvas::Light *clight = canvas_light_owner.get(p_light);
@@ -1805,7 +1850,16 @@ void VisualServerCanvas::canvas_light_occluder_set_transform(RID p_occluder, con
 	RasterizerCanvas::LightOccluderInstance *occluder = canvas_light_occluder_owner.get(p_occluder);
 	ERR_FAIL_COND(!occluder);
 
-	occluder->xform = p_xform;
+	if (_interpolation_data.interpolation_enabled && occluder->interpolated) {
+		if (!occluder->on_interpolate_transform_list) {
+			_interpolation_data.canvas_light_occluder_transform_update_list_curr->push_back(p_occluder);
+			occluder->on_interpolate_transform_list = true;
+		} else {
+			DEV_ASSERT(_interpolation_data.canvas_light_occluder_transform_update_list_curr->size());
+		}
+	}
+
+	occluder->xform_curr = p_xform;
 }
 void VisualServerCanvas::canvas_light_occluder_set_light_mask(RID p_occluder, int p_mask) {
 	RasterizerCanvas::LightOccluderInstance *occluder = canvas_light_occluder_owner.get(p_occluder);
@@ -1950,6 +2004,7 @@ bool VisualServerCanvas::free(RID p_rid) {
 	} else if (canvas_light_owner.owns(p_rid)) {
 		RasterizerCanvas::Light *canvas_light = canvas_light_owner.get(p_rid);
 		ERR_FAIL_COND_V(!canvas_light, true);
+		_interpolation_data.notify_free_canvas_light(p_rid, *canvas_light);
 
 		if (canvas_light->canvas.is_valid()) {
 			Canvas *canvas = canvas_owner.get(canvas_light->canvas);
@@ -1970,6 +2025,7 @@ bool VisualServerCanvas::free(RID p_rid) {
 	} else if (canvas_light_occluder_owner.owns(p_rid)) {
 		RasterizerCanvas::LightOccluderInstance *occluder = canvas_light_occluder_owner.get(p_rid);
 		ERR_FAIL_COND_V(!occluder, true);
+		_interpolation_data.notify_free_canvas_light_occluder(p_rid, *occluder);
 
 		if (occluder->polygon.is_valid()) {
 			LightOccluderPolygon *occluder_poly = canvas_light_occluder_polygon_owner.get(occluder->polygon);
@@ -2109,38 +2165,36 @@ void VisualServerCanvas::tick() {
 }
 
 void VisualServerCanvas::update_interpolation_tick(bool p_process) {
-	// Detect any that were on the previous transform list that are no longer active.
-	for (unsigned int n = 0; n < _interpolation_data.canvas_item_transform_update_list_prev->size(); n++) {
-		const RID &rid = (*_interpolation_data.canvas_item_transform_update_list_prev)[n];
-		Item *item = canvas_item_owner.getornull(rid);
+#define GODOT_UPDATE_INTERPOLATION_TICK(LIST_PREV, LIST_CURR, TYPE, OWNER_LIST)              \
+	/* Detect any that were on the previous transform list that are no longer active. */     \
+	for (unsigned int n = 0; n < _interpolation_data.LIST_PREV->size(); n++) {               \
+		const RID &rid = (*_interpolation_data.LIST_PREV)[n];                                \
+		TYPE *item = OWNER_LIST.getornull(rid);                                              \
+		/* no longer active? (either the instance deleted or no longer being transformed) */ \
+		if (item && !item->on_interpolate_transform_list) {                                  \
+			item->xform_prev = item->xform_curr;                                             \
+		}                                                                                    \
+	}                                                                                        \
+	/* and now for any in the transform list (being actively interpolated), */               \
+	/* keep the previous transform value up to date and ready for next tick */               \
+	if (p_process) {                                                                         \
+		for (unsigned int n = 0; n < _interpolation_data.LIST_CURR->size(); n++) {           \
+			const RID &rid = (*_interpolation_data.LIST_CURR)[n];                            \
+			TYPE *item = OWNER_LIST.getornull(rid);                                          \
+			if (item) {                                                                      \
+				item->xform_prev = item->xform_curr;                                         \
+				item->on_interpolate_transform_list = false;                                 \
+			}                                                                                \
+		}                                                                                    \
+	}                                                                                        \
+	SWAP(_interpolation_data.LIST_CURR, _interpolation_data.LIST_PREV);                      \
+	_interpolation_data.LIST_CURR->clear();
 
-		// no longer active? (either the instance deleted or no longer being transformed)
-		if (item && !item->on_interpolate_transform_list) {
-			// both prev and current are the same, just in case of any interpolations
-			item->xform_prev = item->xform_curr;
-		}
-	}
+	GODOT_UPDATE_INTERPOLATION_TICK(canvas_item_transform_update_list_prev, canvas_item_transform_update_list_curr, Item, canvas_item_owner);
+	GODOT_UPDATE_INTERPOLATION_TICK(canvas_light_transform_update_list_prev, canvas_light_transform_update_list_curr, RasterizerCanvas::Light, canvas_light_owner);
+	GODOT_UPDATE_INTERPOLATION_TICK(canvas_light_occluder_transform_update_list_prev, canvas_light_occluder_transform_update_list_curr, RasterizerCanvas::LightOccluderInstance, canvas_light_occluder_owner);
 
-	// and now for any in the transform list (being actively interpolated), keep the previous transform
-	// value up to date ready for the next tick
-	if (p_process) {
-		for (unsigned int n = 0; n < _interpolation_data.canvas_item_transform_update_list_curr->size(); n++) {
-			const RID &rid = (*_interpolation_data.canvas_item_transform_update_list_curr)[n];
-			Item *item = canvas_item_owner.getornull(rid);
-
-			if (item) {
-				item->xform_prev = item->xform_curr;
-				item->on_interpolate_transform_list = false;
-			}
-		}
-	}
-
-	// we maintain a mirror list for the transform updates, so we can detect when an instance
-	// is no longer being transformed, and remove it from the interpolate list
-	SWAP(_interpolation_data.canvas_item_transform_update_list_curr, _interpolation_data.canvas_item_transform_update_list_prev);
-
-	// prepare for the next iteration
-	_interpolation_data.canvas_item_transform_update_list_curr->clear();
+#undef GODOT_UPDATE_INTERPOLATION_TICK
 }
 
 void VisualServerCanvas::InterpolationData::notify_free_canvas_item(RID p_rid, VisualServerCanvas::Item &r_canvas_item) {
@@ -2153,6 +2207,30 @@ void VisualServerCanvas::InterpolationData::notify_free_canvas_item(RID p_rid, V
 	// if the instance was on any of the lists, remove
 	canvas_item_transform_update_list_curr->erase_multiple_unordered(p_rid);
 	canvas_item_transform_update_list_prev->erase_multiple_unordered(p_rid);
+}
+
+void VisualServerCanvas::InterpolationData::notify_free_canvas_light(RID p_rid, RasterizerCanvas::Light &r_canvas_light) {
+	r_canvas_light.on_interpolate_transform_list = false;
+
+	if (!interpolation_enabled) {
+		return;
+	}
+
+	// if the instance was on any of the lists, remove
+	canvas_light_transform_update_list_curr->erase_multiple_unordered(p_rid);
+	canvas_light_transform_update_list_prev->erase_multiple_unordered(p_rid);
+}
+
+void VisualServerCanvas::InterpolationData::notify_free_canvas_light_occluder(RID p_rid, RasterizerCanvas::LightOccluderInstance &r_canvas_light_occluder) {
+	r_canvas_light_occluder.on_interpolate_transform_list = false;
+
+	if (!interpolation_enabled) {
+		return;
+	}
+
+	// if the instance was on any of the lists, remove
+	canvas_light_occluder_transform_update_list_curr->erase_multiple_unordered(p_rid);
+	canvas_light_occluder_transform_update_list_prev->erase_multiple_unordered(p_rid);
 }
 
 VisualServerCanvas::VisualServerCanvas() {

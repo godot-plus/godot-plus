@@ -725,9 +725,12 @@ public:
 	};
 
 	struct Light : public RID_Data {
-		bool enabled;
+		bool enabled : 1;
+		bool on_interpolate_transform_list : 1;
+		bool interpolated : 1;
 		Color color;
-		Transform2D xform;
+		Transform2D xform_curr;
+		Transform2D xform_prev;
 		float height;
 		float energy;
 		float scale;
@@ -766,6 +769,8 @@ public:
 
 		Light() {
 			enabled = true;
+			on_interpolate_transform_list = false;
+			interpolated = true;
 			color = Color(1, 1, 1);
 			shadow_color = Color(0, 0, 0, 0);
 			height = 0;
@@ -1242,12 +1247,15 @@ public:
 	virtual void canvas_debug_viewport_shadows(Light *p_lights_with_shadow) = 0;
 
 	struct LightOccluderInstance : public RID_Data {
-		bool enabled;
+		bool enabled : 1;
+		bool on_interpolate_transform_list : 1;
+		bool interpolated : 1;
 		RID canvas;
 		RID polygon;
 		RID polygon_buffer;
 		Rect2 aabb_cache;
-		Transform2D xform;
+		Transform2D xform_curr;
+		Transform2D xform_prev;
 		Transform2D xform_cache;
 		int light_mask;
 		VS::CanvasOccluderPolygonCullMode cull_cache;
@@ -1259,6 +1267,8 @@ public:
 			next = nullptr;
 			light_mask = 1;
 			cull_cache = VS::CANVAS_OCCLUDER_POLYGON_CULL_DISABLED;
+			on_interpolate_transform_list = false;
+			interpolated = true;
 		}
 	};
 
