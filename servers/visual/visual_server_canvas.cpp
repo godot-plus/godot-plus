@@ -242,6 +242,37 @@ void VisualServerCanvas::_calculate_canvas_item_bound(Item *p_canvas_item, Rect2
 	}
 
 	_finalize_and_merge_local_bound_to_branch(ci, r_branch_bound);
+
+	// If we are interpolating, we want to modify the local_bound (combined)
+	// to include both the previous AND current bounds.
+	if (local_bound && _interpolation_data.interpolation_enabled && ci->interpolated) {
+		Rect2 bound_prev = ci->local_bound_prev;
+
+		// Keep track of the previously assigned exact bound for the next tick.
+		ci->local_bound_prev = ci->local_bound;
+
+		// The combined bound is the exact current bound merged with the previous exact bound.
+		ci->local_bound = ci->local_bound.merge(bound_prev);
+
+		// This can overflow, it's no problem, it is just rough to detect when items stop
+		// having local bounds updated, so we can set prev to curr.
+		ci->local_bound_last_update_tick = Engine::get_singleton()->get_physics_frames();
+
+		// Detect special case of overflow.
+		// This is omitted but included for reference.
+		// It is such a rare possibility, and even if it did occur
+		// so it should just result in slightly larger culling bounds
+		// probably for one tick (and no visual errors).
+		// Would occur once every 828.5 days at 60 ticks per second
+		// with uint32_t counter.
+#if 0
+		if (!ci->local_bound_last_update_tick) {
+			// Prevents it being treated as non-dirty.
+			// Just has an increased delay of one tick in this very rare occurrence.
+			ci->local_bound_last_update_tick = 1;
+		}
+#endif
+	}
 }
 
 void VisualServerCanvas::_finalize_and_merge_local_bound_to_branch(Item *p_canvas_item, Rect2 *r_branch_bound) {
@@ -425,6 +456,13 @@ void VisualServerCanvas::_render_canvas_item_cull_by_node(Item *p_canvas_item, c
 
 	// This should have been calculated as a pre-process.
 	DEV_ASSERT(!ci->bound_dirty);
+
+	// If we are interpolating, and the updates have stopped, we can reduce the local bound.
+	if (ci->local_bound_last_update_tick && (ci->local_bound_last_update_tick != Engine::get_singleton()->get_physics_frames())) {
+		// The combined bound is reduced to the last calculated exact bound.
+		ci->local_bound = ci->local_bound_prev;
+		ci->local_bound_last_update_tick = 0;
+	}
 
 	Rect2 rect = ci->get_rect();
 
@@ -1430,6 +1468,12 @@ Rect2 VisualServerCanvas::_debug_canvas_item_get_rect(RID p_item) {
 	Item *canvas_item = canvas_item_owner.getornull(p_item);
 	ERR_FAIL_COND_V(!canvas_item, Rect2());
 	return canvas_item->get_rect();
+}
+
+Rect2 VisualServerCanvas::_debug_canvas_item_get_local_bound(RID p_item) {
+	Item *canvas_item = canvas_item_owner.getornull(p_item);
+	ERR_FAIL_COND_V(!canvas_item, Rect2());
+	return canvas_item->local_bound;
 }
 
 void VisualServerCanvas::canvas_item_set_skeleton_relative_xform(RID p_item, Transform2D p_relative_xform) {

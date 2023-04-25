@@ -1036,6 +1036,13 @@ public:
 		// in local space.
 		Rect2 local_bound;
 
+		// When using interpolation, the local bound for culling
+		// should be a combined bound of the previous and current.
+		// To keep this up to date, we need to keep track of the previous
+		// bound separately rather than just the combined bound.
+		Rect2 local_bound_prev;
+		uint32_t local_bound_last_update_tick;
+
 	private:
 		Rect2 calculate_polygon_bounds(const Item::CommandPolygon &p_polygon) const;
 		void precalculate_polygon_bone_bounds(const Item::CommandPolygon &p_polygon) const;
@@ -1229,6 +1236,7 @@ public:
 			update_when_visible = false;
 			on_interpolate_transform_list = false;
 			interpolated = true;
+			local_bound_last_update_tick = 0;
 		}
 		virtual ~Item() {
 			clear();
