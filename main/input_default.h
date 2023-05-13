@@ -52,12 +52,14 @@ class InputDefault : public Input {
 	MainLoop *main_loop;
 
 	struct Action {
-		uint64_t physics_frame;
-		uint64_t idle_frame;
-		bool pressed;
-		bool exact;
-		float strength;
-		float raw_strength;
+		uint64_t pressed_physics_frame = UINT64_MAX;
+		uint64_t pressed_idle_frame = UINT64_MAX;
+		uint64_t released_physics_frame = UINT64_MAX;
+		uint64_t released_idle_frame = UINT64_MAX;
+		bool pressed = false;
+		bool exact = true;
+		float strength = 0;
+		float raw_strength = 0;
 	};
 
 	Map<StringName, Action> action_state;
@@ -225,8 +227,8 @@ public:
 	virtual bool is_mouse_button_pressed(int p_button) const;
 	virtual bool is_joy_button_pressed(int p_device, int p_button) const;
 	virtual bool is_action_pressed(const StringName &p_action, bool p_exact = false) const;
-	virtual bool is_action_just_pressed(const StringName &p_action, bool p_exact = false) const;
-	virtual bool is_action_just_released(const StringName &p_action, bool p_exact = false) const;
+	virtual bool is_action_just_pressed(const StringName &p_action, bool p_exact = false, bool p_current = false) const;
+	virtual bool is_action_just_released(const StringName &p_action, bool p_exact = false, bool p_current = false) const;
 	virtual float get_action_strength(const StringName &p_action, bool p_exact = false) const;
 	virtual float get_action_raw_strength(const StringName &p_action, bool p_exact = false) const;
 
