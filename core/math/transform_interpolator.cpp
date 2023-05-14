@@ -39,7 +39,7 @@ void TransformInterpolator::interpolate_transform2D(const Transform2D &p_prev, c
 
 	// Special case for physics interpolation, if flipping, don't interpolate basis.
 	// If the determinant polarity changes, the handedness of the coordinate system changes.
-	if (_sign(p_prev.basis_determinant()) != _sign(p_curr.basis_determinant())) {
+	if (_sign(p_prev.determinant()) != _sign(p_curr.determinant())) {
 		r_result.elements[0] = p_curr.elements[0];
 		r_result.elements[1] = p_curr.elements[1];
 		r_result.set_origin(Vector2::linear_interpolate(p1, p2, p_fraction));
