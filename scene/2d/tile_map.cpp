@@ -564,18 +564,32 @@ void TileMap::update_dirty_quadrants() {
 			}
 
 			Ref<Texture> normal_map = tile_set->tile_get_normal_map(c.id);
-			Color modulate = tile_set->tile_get_modulate(c.id);
-			Color self_modulate = get_self_modulate();
-			modulate = Color(modulate.r * self_modulate.r, modulate.g * self_modulate.g,
-					modulate.b * self_modulate.b, modulate.a * self_modulate.a);
+			Color modulate = tile_set->tile_get_modulate(c.id) * get_self_modulate();
+
 			if (r == Rect2()) {
 				tex->draw_rect(canvas_item, rect, false, modulate, c.transpose, normal_map);
 			} else {
-				if (!multirect_started) {
-					multirect_started = true;
-					VisualServerCanvasHelper::tilemap_begin();
+				Texture::RefineRectResult res = tex->refine_rect_region(rect, r);
+				switch (res) {
+					case Texture::REFINE_RECT_RESULT_DRAW: {
+						if (!multirect_started) {
+							multirect_started = true;
+							VisualServerCanvasHelper::tilemap_begin();
+						}
+						VisualServerCanvasHelper::tilemap_add_rect(canvas_item, rect, tex->get_rid(), r, modulate, c.transpose, normal_map.is_valid() ? normal_map->get_rid() : RID(), clip_uv);
+					} break;
+					case Texture::REFINE_RECT_RESULT_FALLBACK: {
+						if (multirect_started) {
+							// If we are currently writing a multirect, we must flush
+							// to ensure there are no issues due to overlap.
+							VisualServerCanvasHelper::tilemap_end();
+							multirect_started = false;
+						}
+						tex->draw_rect_region(canvas_item, rect, r, modulate, c.transpose, normal_map, clip_uv);
+					} break;
+					default: {
+					} break;
 				}
-				VisualServerCanvasHelper::tilemap_add_rect(canvas_item, rect, tex->get_rid(), r, modulate, c.transpose, normal_map.is_valid() ? normal_map->get_rid() : RID(), clip_uv);
 			}
 
 			Vector<TileSet::ShapeData> shapes = tile_set->tile_get_shapes(c.id);
