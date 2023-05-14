@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  message_queue.h                                                       */
+/*  gltf_document_extension_physics.h                                     */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,82 +28,26 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef MESSAGE_QUEUE_H
-#define MESSAGE_QUEUE_H
+#ifndef GLTF_DOCUMENT_EXTENSION_PHYSICS_H
+#define GLTF_DOCUMENT_EXTENSION_PHYSICS_H
 
-#include "core/local_vector.h"
-#include "core/object.h"
-#include "core/os/thread_safe.h"
+#include "../gltf_document_extension.h"
 
-class MessageQueue {
-	_THREAD_SAFE_CLASS_
+#include "gltf_collider.h"
+#include "gltf_physics_body.h"
 
-	enum {
-		TYPE_CALL,
-		TYPE_NOTIFICATION,
-		TYPE_SET,
-		FLAG_SHOW_ERROR = 1 << 14,
-		FLAG_MASK = FLAG_SHOW_ERROR - 1
-
-	};
-
-	struct Message {
-		ObjectID instance_id;
-		StringName target;
-		int16_t type;
-		union {
-			int16_t notification;
-			int16_t args;
-		};
-	};
-
-	struct Buffer {
-		LocalVector<uint8_t> data;
-		uint64_t end = 0;
-	};
-
-	Buffer buffers[2];
-	int read_buffer = 0;
-	int write_buffer = 1;
-	uint64_t max_allowed_buffer_size = 0;
-
-	struct BufferSizeMonitor {
-		uint32_t max_size = 0;
-		uint32_t flush_count = 0;
-
-		// Only used for performance statistics.
-		uint32_t max_size_overall = 0;
-	} _buffer_size_monitor;
-
-	void _call_function(Object *p_target, const StringName &p_func, const Variant *p_args, int p_argcount, bool p_show_error);
-	void _update_buffer_monitor();
-
-	static MessageQueue *singleton;
-
-	bool flushing;
+class GLTFDocumentExtensionPhysics : public GLTFDocumentExtension {
+	GDCLASS(GLTFDocumentExtensionPhysics, GLTFDocumentExtension);
 
 public:
-	static MessageQueue *get_singleton();
-
-	Error push_call(ObjectID p_id, const StringName &p_method, const Variant **p_args, int p_argcount, bool p_show_error = false);
-	Error push_call(ObjectID p_id, const StringName &p_method, VARIANT_ARG_LIST);
-	Error push_notification(ObjectID p_id, int p_notification);
-	Error push_set(ObjectID p_id, const StringName &p_prop, const Variant &p_value);
-
-	Error push_call(Object *p_object, const StringName &p_method, VARIANT_ARG_LIST);
-	Error push_notification(Object *p_object, int p_notification);
-	Error push_set(Object *p_object, const StringName &p_prop, const Variant &p_value);
-
-	void statistics();
-	void flush();
-
-	bool is_flushing() const;
-
-	int get_max_buffer_usage() const;
-	int get_current_buffer_usage() const;
-
-	MessageQueue();
-	~MessageQueue();
+	// Import process.
+	Error import_preflight(Ref<GLTFState> p_state, Vector<String> p_extensions);
+	Vector<String> get_supported_extensions();
+	Error parse_node_extensions(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &p_extensions);
+	Spatial *generate_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_parent);
+	// Export process.
+	void convert_scene_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Node *p_scene_node);
+	Error export_node(Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_node_json, Node *p_scene_node);
 };
 
-#endif // MESSAGE_QUEUE_H
+#endif // GLTF_DOCUMENT_EXTENSION_PHYSICS_H
