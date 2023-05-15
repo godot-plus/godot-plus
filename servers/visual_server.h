@@ -1066,8 +1066,8 @@ public:
 	Rect2 debug_canvas_item_get_rect(RID p_item) { return _debug_canvas_item_get_rect(p_item); }
 	Rect2 debug_canvas_item_get_local_bound(RID p_item) { return _debug_canvas_item_get_local_bound(p_item); }
 #else
-	Rect2 debug_canvas_item_get_rect(RID p_item) { return Rect2; }
-	Rect2 debug_canvas_item_get_local_bound(RID p_item) { return Rect2; }
+	Rect2 debug_canvas_item_get_rect(RID p_item) { return Rect2(); }
+	Rect2 debug_canvas_item_get_local_bound(RID p_item) { return Rect2(); }
 #endif
 
 	virtual Rect2 _debug_canvas_item_get_rect(RID p_item) = 0;
