@@ -286,12 +286,26 @@ def generate_scu_files(verbose, is_release_build):
     process_folder(["main"])
     process_folder(["main/tests"])
 
+    process_folder(
+        [
+            "platform",
+            "android/export",
+            "iphone/export",
+            "javascript/export",
+            "osx/export",
+            "uwp/export",
+            "windows/export",
+            "x11/export",
+        ]
+    )
+
     process_folder(["modules/bullet"])
-    process_folder(["modules/gltf"])
-    process_folder(["modules/gltf/structures"])
+    process_folder(["modules/gltf", "structures", "extensions", "extensions/physics"])
+    # process_folder(["modules/gltf/structures"])
     process_folder(["modules/navigation"])
     process_folder(["modules/visual_script"])
     process_folder(["modules/webrtc"])
+    process_folder(["modules/webxr"])
     process_folder(["modules/websocket"])
     process_folder(["modules/gridmap"])
 
@@ -304,7 +318,7 @@ def generate_scu_files(verbose, is_release_build):
     process_folder(["modules/gdnative/pluginscript"])
     process_folder(["modules/gdnative/net"])
 
-    process_folder(["scene"])
+    process_folder(["scene", "audio", "debugger"])
     process_folder(["scene/2d"])
     process_folder(["scene/3d"])
     process_folder(["scene/animation"])
@@ -313,8 +327,8 @@ def generate_scu_files(verbose, is_release_build):
     process_folder(["scene/resources"])
 
     process_folder(["servers"])
-    process_folder(["servers/visual"])
-    process_folder(["servers/visual/portals"])
+    process_folder(["servers/visual", "portals"])
+    # process_folder(["servers/visual/portals"])
     process_folder(["servers/physics_2d"])
     process_folder(["servers/physics"])
     process_folder(["servers/physics/joints"])

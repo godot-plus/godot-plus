@@ -2,6 +2,5 @@
 
 Import("env")
 
-env.add_source_files_scu(env.servers_sources, "*.cpp")
-
-SConscript("portals/SCsub")
+if env.add_source_files_scu(env.servers_sources, "*.cpp") == False:
+    SConscript("portals/SCsub")
