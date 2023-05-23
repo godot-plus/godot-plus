@@ -8,6 +8,7 @@ from os.path import normpath, basename
 
 base_folder = os.path.abspath("./") + "/"
 _verbose = False
+_is_release_build = False
 
 
 def clear_out_existing_files(output_folder, extension):
@@ -24,6 +25,11 @@ def clear_out_existing_files(output_folder, extension):
     for file in glob.glob("*." + extension):
         # print("removed pre-existing file: " + file)
         os.remove(file)
+
+
+def folder_not_found(folder):
+    abs_folder = base_folder + folder + "/"
+    return os.path.isdir(abs_folder) == False
 
 
 def find_files_in_folder(folder, sub_folder, include_list, extension, sought_exceptions, found_exceptions):
@@ -162,7 +168,7 @@ def find_section_name(sub_folder):
 # Ideally in these situations, the source code should be changed to prevent naming conflicts.
 
 # "extension" will usually be cpp, but can also be set to c (for e.g. third party libraries that use c)
-def process_folder(folders, sought_exceptions=[], num_output_files=1, extension="cpp"):
+def process_folder(folders, sought_exceptions=[], includes_per_scu=0, extension="cpp"):
     if len(folders) == 0:
         return
 
@@ -192,11 +198,21 @@ def process_folder(folders, sought_exceptions=[], num_output_files=1, extension=
     # calculate how many lines to write in each file
     total_lines = len(found_includes)
 
+    # adjust number of output files according to whether DEV or release
+    num_output_files = 1
+    if _is_release_build:
+        # always have a maximum in release
+        includes_per_scu = 8
+        num_output_files = max(math.ceil(total_lines / includes_per_scu), 1)
+    else:
+        if includes_per_scu > 0:
+            num_output_files = max(math.ceil(total_lines / includes_per_scu), 1)
+
     # error condition
     if total_lines == 0:
         return
 
-    lines_per_file = math.floor(total_lines / num_output_files)
+    lines_per_file = math.ceil(total_lines / num_output_files)
     lines_per_file = max(lines_per_file, 1)
 
     start_line = 0
@@ -232,7 +248,7 @@ def process_folder(folders, sought_exceptions=[], num_output_files=1, extension=
         )
 
 
-def generate_scu_files(verbose):
+def generate_scu_files(verbose, is_release_build):
 
     print("=============================")
     print("Single Compilation Unit Build")
@@ -240,13 +256,16 @@ def generate_scu_files(verbose):
     print("Generating SCU build files")
     global _verbose
     _verbose = verbose
+    global _is_release_build
+    _is_release_build = is_release_build
 
     # check we are running from the correct folder
     curr_folder = os.path.abspath("./")
     parent_path = basename(normpath(curr_folder))
 
-    if (parent_path != "godot") and (parent_path != "godot-plus"):
-        print('ERROR - parent_path is not "godot", ensure scu_builders.py is run from the godot folder.')
+    # if (parent_path != "godot") and (parent_path != "godot-plus"):
+    if folder_not_found("core") or folder_not_found("platform") or folder_not_found("scene"):
+        print("ERROR - ensure scu_builders.py is run from the godot folder.")
         return
 
     process_folder(["core"])
