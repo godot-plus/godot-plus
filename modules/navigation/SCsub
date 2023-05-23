@@ -12,19 +12,24 @@ thirdparty_obj = []
 # Recast
 if env["builtin_recast"]:
     thirdparty_dir = "#thirdparty/recastnavigation/Recast/"
-    thirdparty_sources = [
-        "Source/Recast.cpp",
-        "Source/RecastAlloc.cpp",
-        "Source/RecastArea.cpp",
-        "Source/RecastAssert.cpp",
-        "Source/RecastContour.cpp",
-        "Source/RecastFilter.cpp",
-        "Source/RecastLayers.cpp",
-        "Source/RecastMesh.cpp",
-        "Source/RecastMeshDetail.cpp",
-        "Source/RecastRasterization.cpp",
-        "Source/RecastRegion.cpp",
-    ]
+
+    thirdparty_sources = env.scu_get_files(thirdparty_dir)
+    if len(thirdparty_sources) > 0:
+        print("SCU building thirdparty recast")
+    else:
+        thirdparty_sources = [
+            "Source/Recast.cpp",
+            "Source/RecastAlloc.cpp",
+            "Source/RecastArea.cpp",
+            "Source/RecastAssert.cpp",
+            "Source/RecastContour.cpp",
+            "Source/RecastFilter.cpp",
+            "Source/RecastLayers.cpp",
+            "Source/RecastMesh.cpp",
+            "Source/RecastMeshDetail.cpp",
+            "Source/RecastRasterization.cpp",
+            "Source/RecastRegion.cpp",
+        ]
     thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
     env_navigation.Prepend(CPPPATH=[thirdparty_dir + "Include"])

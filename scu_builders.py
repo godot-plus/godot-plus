@@ -301,7 +301,6 @@ def generate_scu_files(verbose, is_release_build):
 
     process_folder(["modules/bullet"])
     process_folder(["modules/gltf", "structures", "extensions", "extensions/physics"])
-    # process_folder(["modules/gltf/structures"])
     process_folder(["modules/navigation"])
     process_folder(["modules/visual_script"])
     process_folder(["modules/webrtc"])
@@ -317,6 +316,7 @@ def generate_scu_files(verbose, is_release_build):
     process_folder(["modules/gdnative/arvr"])
     process_folder(["modules/gdnative/pluginscript"])
     process_folder(["modules/gdnative/net"])
+    process_folder(["modules/mbedtls"])
 
     process_folder(["scene", "audio", "debugger"])
     process_folder(["scene/2d"])
@@ -328,12 +328,60 @@ def generate_scu_files(verbose, is_release_build):
 
     process_folder(["servers"])
     process_folder(["servers/visual", "portals"])
-    # process_folder(["servers/visual/portals"])
     process_folder(["servers/physics_2d"])
     process_folder(["servers/physics"])
     process_folder(["servers/physics/joints"])
     process_folder(["servers/audio"])
     process_folder(["servers/audio/effects"])
+
+    process_folder(["thirdparty/embree/common", "sys", "math", "simd", "lexers", "tasking"], ["tokenstream"])
+    process_folder(["thirdparty/embree/kernels", "common", "geometry", "builders"], ["rtcore"])
+
+    process_folder(["thirdparty/oidn", "common", "core", "mkl-dnn/src/common", "weights"])
+    process_folder(["thirdparty/bullet/BulletSoftBody", "BulletReducedDeformableBody"], ["btSoftRigidDynamicsWorld"])
+    process_folder(["thirdparty/brotli", "common", "dec"], [], 0, "c")
+    process_folder(
+        ["thirdparty/mbedtls/library"],
+        ["chacha20", "chachapoly", "ctr_drbg", "camellia", "gcm", "sha512", "ssl_ciphersuites", "ssl_srv"],
+        0,
+        "c",
+    )
+    process_folder(
+        [
+            "thirdparty/libwebp",
+            "src/dec",
+            "src/demux",
+            "src/dsp",
+            "src/enc",
+            "src/mux",
+            "src/utils",
+            "src/webp",
+            "sharpyuv",
+        ],
+        [
+            "sharpyuv",
+            "demux",
+            "enc",
+            "enc_sse2",
+            "quant_dec",
+            "lossless_enc",
+            "lossless_sse2",
+            "ssim_sse2",
+            "analysis_enc",
+            "filter_enc",
+            "picture_tools_enc",
+            "predictor_enc",
+            "quant_enc",
+            "picture_psnr_enc",
+            "tree_enc",
+            "webp_enc",
+            "anim_encode",
+            "quant_levels_dec_utils",
+        ],
+        0,
+        "c",
+    )
+    process_folder(["thirdparty/recastnavigation/Recast", "Source"], ["RecastMesh", "RecastContour"])
 
     # Finally change back the path to the calling folder
     os.chdir(curr_folder)
