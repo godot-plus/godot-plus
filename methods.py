@@ -91,6 +91,45 @@ def add_source_files_scu(self, sources, files):
         return False
 
 
+def scu_get_files(self, source_tree_path, subfolder="", depth=2):
+    if self["use_scu"]:
+        # translate source tree to relative path
+        path = ""
+        for n in range(depth):
+            path += "../"
+        path += source_tree_path[1:] + subfolder
+
+        if not os.path.isdir(path):
+            print("ERROR " + path + " not found.")
+            return []
+
+        if self["verbose"]:
+            print("scu_get_file_array path : " + path)
+        curr_folder = os.path.abspath("./")
+        os.chdir(path)
+
+        path += "scu/"
+        found = []
+
+        for file in glob.glob("scu/*.cpp"):
+            if self["verbose"]:
+                print("found file " + file)
+            found += [subfolder + file]
+
+        for file in glob.glob("scu/*.c"):
+            if self["verbose"]:
+                print("found file " + file)
+            found += [subfolder + file]
+
+        # Finally change back the path to the calling folder
+        os.chdir(curr_folder)
+
+        return found
+
+    # failed
+    return []
+
+
 def disable_warnings(self):
     # 'self' is the environment
     if self.msvc:
