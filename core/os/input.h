@@ -77,6 +77,7 @@ protected:
 
 	bool has_input_thread() const { return data.has_input_thread; }
 	void _update_buffering_mode();
+	virtual void _flush_buffered_events_ex(uint64_t p_up_to_timestamp) = 0;
 
 public:
 #undef CursorShape
@@ -170,15 +171,9 @@ public:
 
 	virtual void parse_input_event(const Ref<InputEvent> &p_event) = 0;
 
-	// DO NOT call force_flush_buffered_events() in normal course of events,
-	// as it will break agile input on any frame it is called.
-	// Instead rely on flush_buffered_events_tick() and
-	// flush_buffered_events_frame() which are called from
-	// Main::iteration().
-	virtual void force_flush_buffered_events() = 0;
-	virtual void flush_buffered_events_iteration() = 0;
-	virtual void flush_buffered_events_tick(uint64_t p_tick_timestamp) = 0;
-	virtual void flush_buffered_events_frame() = 0;
+	void flush_buffered_events_iteration();
+	void flush_buffered_events_tick(uint64_t p_tick_timestamp);
+	void flush_buffered_events_frame();
 	void flush_buffered_events();
 	void flush_buffered_events_post_frame();
 
@@ -189,7 +184,7 @@ public:
 	bool is_using_input_buffering() const;
 
 	void set_use_agile_flushing(bool p_enable);
-	bool is_using_agile_flushing() const;
+	bool is_agile_flushing() const;
 
 	void set_use_legacy_flushing(bool p_enable);
 	void set_has_input_thread(bool p_has_thread);

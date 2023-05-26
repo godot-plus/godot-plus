@@ -366,6 +366,7 @@ def generate_scu_files(verbose, is_release_build):
             "quant_dec",
             "lossless_enc",
             "lossless_sse2",
+            "lossless_neon",
             "ssim_sse2",
             "analysis_enc",
             "filter_enc",
