@@ -912,38 +912,8 @@ void InputDefault::parse_input_event(const Ref<InputEvent> &p_event) {
 	}
 }
 
-void InputDefault::flush_buffered_events_ex(uint64_t p_up_to_timestamp) {
+void InputDefault::_flush_buffered_events_ex(uint64_t p_up_to_timestamp) {
 	_event_buffer.flush_events(p_up_to_timestamp, *this, data.use_accumulated_input);
-}
-
-void InputDefault::force_flush_buffered_events() {
-	flush_buffered_events_ex(UINT64_MAX);
-}
-
-void InputDefault::flush_buffered_events_iteration() {
-	// legacy did not flush here.
-	if (data.use_legacy_flushing) {
-		return;
-	}
-
-	if (data.buffering_mode == BUFFERING_MODE_FRAME) {
-		flush_buffered_events_ex(UINT64_MAX);
-	}
-}
-
-void InputDefault::flush_buffered_events_tick(uint64_t p_tick_timestamp) {
-	if (data.buffering_mode == BUFFERING_MODE_AGILE) {
-		flush_buffered_events_ex(p_tick_timestamp);
-	}
-}
-
-void InputDefault::flush_buffered_events_frame() {
-	// If we are in legacy mode, if not NONE or FRAME,
-	// then it will be AGILE, in which case legacy had a flush
-	// here, so the new logic works as before.
-	if (data.buffering_mode == BUFFERING_MODE_AGILE) {
-		flush_buffered_events_ex(UINT64_MAX);
-	}
 }
 
 void InputDefault::release_pressed_events() {

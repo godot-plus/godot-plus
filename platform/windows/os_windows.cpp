@@ -3565,7 +3565,6 @@ void OS_Windows::swap_buffers() {
 
 void OS_Windows::force_process_input() {
 	process_events(); // get rid of pending events
-	input->force_flush_buffered_events();
 }
 
 void OS_Windows::run() {

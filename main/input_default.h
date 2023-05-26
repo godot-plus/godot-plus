@@ -247,6 +247,8 @@ protected:
 
 	Map<int, VibrationInfo> joy_vibration;
 
+	virtual void _flush_buffered_events_ex(uint64_t p_up_to_timestamp);
+
 public:
 	virtual bool is_key_pressed(int p_scancode) const;
 	virtual bool is_physical_key_pressed(int p_scancode) const;
@@ -330,12 +332,6 @@ public:
 	bool is_joy_mapped(int p_device);
 	String get_joy_guid_remapped(int p_device) const;
 	void set_fallback_mapping(String p_guid);
-
-	void flush_buffered_events_ex(uint64_t p_up_to_timestamp);
-	virtual void force_flush_buffered_events();
-	virtual void flush_buffered_events_iteration();
-	virtual void flush_buffered_events_tick(uint64_t p_tick_timestamp);
-	virtual void flush_buffered_events_frame();
 
 	virtual void release_pressed_events();
 	InputDefault();
