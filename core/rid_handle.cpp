@@ -259,6 +259,9 @@ bool RID_Database::handle_is_owner(const RID &p_rid, const RID_OwnerBase *p_owne
 			ERR_FAIL_COND_V_MSG(pe.revision != p_rid._revision, false, "RID handle_is_owner, revision is incorrect, possible dangling RID. " + _rid_to_string(p_rid, pe));
 		}
 
+		if (!pe.data) {
+			ERR_FAIL_NULL_V_MSG(pe.data, false, "RID_Database handle_is_owner, data is NULL, possible dangling RID. " + _rid_to_string(p_rid, pe));
+		}
 		return pe.data->_owner == p_owner;
 	}
 	return false;
