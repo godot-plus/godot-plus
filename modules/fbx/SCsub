@@ -12,7 +12,7 @@ if env["builtin_zlib"]:
     env_fbx.Prepend(CPPPATH=["#thirdparty/zlib/"])
 
 # Either add all the folders in one go if a SCU build...
-if env_fbx.add_source_files_scu(env.modules_sources, "*.cpp") == False:
+if env_fbx.add_source_files(env.modules_sources, "*.cpp") == False:
     # or if not a scu build, the above line only adds the main folder,
     # and the subfolders are added separately:
     env_fbx.add_source_files(env.modules_sources, "tools/*.cpp")

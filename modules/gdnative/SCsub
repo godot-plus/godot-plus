@@ -7,7 +7,7 @@ env_gdnative = env_modules.Clone()
 
 
 # Either add all the folders in one go if a SCU build...
-if env_gdnative.add_source_files_scu(env.modules_sources, "*.cpp") == False:
+if env_gdnative.add_source_files(env.modules_sources, "*.cpp") == False:
     # or if not a scu build, the above line only adds the main folder,
     # and the subfolders are added separately:
     env_gdnative.add_source_files(env.modules_sources, "android/*.cpp")
