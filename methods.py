@@ -13,8 +13,23 @@ from SCons.Script import ARGUMENTS
 from SCons.Script import Glob
 from SCons.Variables.BoolVariable import _text2bool
 
+from pathlib import Path
+from os.path import normpath, basename
 
-def add_source_files(self, sources, files, allow_gen=False):
+# Get the "Godot" folder name ahead of time
+base_folder_path = str(os.path.abspath(Path(__file__).parent)) + "/"
+base_folder_only = os.path.basename(os.path.normpath(base_folder_path))
+# Listing all the folders we have converted
+# for SCU in scu_builders.py
+_scu_folders = set()
+
+
+def set_scu_folders(scu_folders):
+    global _scu_folders
+    _scu_folders = scu_folders
+
+
+def add_source_files_orig(self, sources, files, allow_gen=False):
     # Convert string to list of absolute paths (including expanding wildcard)
     if isbasestring(files):
         # Keep SCons project-absolute path as they are (no wildcard support)
@@ -29,11 +44,8 @@ def add_source_files(self, sources, files, allow_gen=False):
             skip_gen_cpp = "*" in files
             dir_path = self.Dir(".").abspath
             files = sorted(glob.glob(dir_path + "/" + files))
-            if skip_gen_cpp:
-                if allow_gen:
-                    files = [f for f in files]
-                else:
-                    files = [f for f in files if not f.endswith(".gen.cpp")]
+            if skip_gen_cpp and not allow_gen:
+                files = [f for f in files if not f.endswith(".gen.cpp")]
 
     # Add each path as compiled Object following environment (self) configuration
     for path in files:
@@ -44,8 +56,11 @@ def add_source_files(self, sources, files, allow_gen=False):
         sources.append(obj)
 
 
+# The section name is used for checking
+# the hash table to see whether the folder
+# is included in the SCU build.
+# It will be something like "core/math".
 def _find_scu_section_name(subdir):
-    # Construct a useful name for the section from the path for debug logging
     section_path = os.path.abspath(subdir) + "/"
 
     folders = []
@@ -54,7 +69,7 @@ def _find_scu_section_name(subdir):
     for i in range(8):
         folder = os.path.dirname(section_path)
         folder = os.path.basename(folder)
-        if folder == "godot":
+        if folder == base_folder_only:
             break
         folders += [folder]
         section_path += "../"
@@ -62,15 +77,18 @@ def _find_scu_section_name(subdir):
 
     section_name = ""
     for n in range(len(folders)):
-        section_name += folders[len(folders) - n - 1] + " "
+        # section_name += folders[len(folders) - n - 1] + " "
+        section_name += folders[len(folders) - n - 1]
+        if n != (len(folders) - 1):
+            section_name += "/"
 
     return section_name
 
 
-# Same as add_source_files() but automatically handles single compilation unit build,
-# and also take a section_name string for logging output (the format of the string is not critical).
-def add_source_files_scu(self, sources, files):
-    if self["use_scu"]:
+def add_source_files_scu(self, sources, files, allow_gen=False):
+    if self["use_scu"] and isinstance(files, str):
+        if "*." not in files:
+            return False
 
         # If the files are in a subdirectory, we want to create the scu gen
         # files inside this subdirectory.
@@ -78,17 +96,30 @@ def add_source_files_scu(self, sources, files):
         if subdir != "":
             subdir += "/"
 
+        section_name = _find_scu_section_name(subdir)
+        # if the section name is in the hash table?
+        # i.e. is it part of the SCU build?
+        global _scu_folders
+        if section_name not in (_scu_folders):
+            return False
+
         if self["verbose"]:
-            section_name = _find_scu_section_name(subdir)
             print("SCU building " + section_name)
 
-        # Add all the gen.cpp files in the directory
-        self.add_source_files(sources, subdir + "scu/scu_*.gen.cpp", True)
+        # Add all the gen.cpp files in the SCU directory
+        add_source_files_orig(self, sources, subdir + "scu/scu_*.gen.cpp", True)
         return True
-    else:
+    return False
+
+
+# Either builds the folder using the SCU system,
+# or reverts to regular build.
+def add_source_files(self, sources, files, allow_gen=False):
+    if not add_source_files_scu(self, sources, files, allow_gen):
         # Wraps the original function when scu build is not active.
-        self.add_source_files(sources, files)
+        add_source_files_orig(self, sources, files, allow_gen)
         return False
+    return True
 
 
 def scu_get_files(self, source_tree_path, subfolder="", depth=2):

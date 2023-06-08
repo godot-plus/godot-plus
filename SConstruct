@@ -87,7 +87,6 @@ env_base.__class__.disable_module = methods.disable_module
 env_base.__class__.add_module_version_string = methods.add_module_version_string
 
 env_base.__class__.add_source_files = methods.add_source_files
-env_base.__class__.add_source_files_scu = methods.add_source_files_scu
 env_base.__class__.scu_get_files = methods.scu_get_files
 env_base.__class__.use_windows_spawn_fix = methods.use_windows_spawn_fix
 env_base.__class__.split_lib = methods.split_lib
@@ -158,7 +157,7 @@ opts.Add(BoolVariable("disable_advanced_gui", "Disable advanced GUI nodes and be
 opts.Add(BoolVariable("no_editor_splash", "Don't use the custom splash screen for the editor", True))
 opts.Add("system_certs_path", "Use this path as SSL certificates default for editor (for package maintainers)", "")
 opts.Add(BoolVariable("use_precise_math_checks", "Math checks use very precise epsilon (debug option)", False))
-opts.Add(EnumVariable("scu_build", "Use single compilation unit build", "none", ("none", "dev", "all")))
+opts.Add(BoolVariable("scu_build", "Use single compilation unit build", False))
 opts.Add(
     EnumVariable(
         "rids",
@@ -331,18 +330,15 @@ if env_base["target"] == "release_debug" or env_base["target"] == "debug":
     # to give *users* extra debugging information for their game development.
     env_base.Append(CPPDEFINES=["DEBUG_ENABLED"])
 
+env_base["use_scu"] = env_base["scu_build"] == True
+
 if env_base["target"] == "debug":
     # DEV_ENABLED enables *engine developer* code which should only be compiled for those
     # working on the engine itself.
     env_base.Append(CPPDEFINES=["DEV_ENABLED"])
-    env_base["use_scu"] = env_base["scu_build"] == "dev" or env_base["scu_build"] == "all"
 else:
     # Disable assert() for production targets (only used in thirdparty code).
     env_base.Append(CPPDEFINES=["NDEBUG"])
-
-    # SCU builds currently use a lot of compiler memory
-    # in release builds, so disallow outside of DEV builds unless "all" is set.
-    env_base["use_scu"] = env_base["scu_build"] == "all"
 
 # SCons speed optimization controlled by the `fast_unsafe` option, which provide
 # more than 10 s speed up for incremental rebuilds.
@@ -453,7 +449,7 @@ if selected_platform in platform_list:
 
     # Run SCU file generation script if in a SCU build.
     if env["use_scu"]:
-        scu_builders.generate_scu_files(env["verbose"], env_base["target"] != "debug")
+        methods.set_scu_folders(scu_builders.generate_scu_files(env["verbose"], env_base["target"] != "debug"))
 
     # Must happen after the flags' definition, as configure is when most flags
     # are actually handled to change compile options, etc.

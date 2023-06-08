@@ -6,9 +6,11 @@ import math
 from pathlib import Path
 from os.path import normpath, basename
 
-base_folder = os.path.abspath("./") + "/"
+base_folder_path = str(Path(__file__).parent) + "/"
+base_folder_only = os.path.basename(os.path.normpath(base_folder_path))
 _verbose = False
 _is_release_build = False
+_scu_folders = set()
 
 
 def clear_out_existing_files(output_folder, extension):
@@ -28,12 +30,12 @@ def clear_out_existing_files(output_folder, extension):
 
 
 def folder_not_found(folder):
-    abs_folder = base_folder + folder + "/"
-    return os.path.isdir(abs_folder) == False
+    abs_folder = base_folder_path + folder + "/"
+    return not os.path.isdir(abs_folder)
 
 
 def find_files_in_folder(folder, sub_folder, include_list, extension, sought_exceptions, found_exceptions):
-    abs_folder = base_folder + folder + "/" + sub_folder
+    abs_folder = base_folder_path + folder + "/" + sub_folder
 
     if not os.path.isdir(abs_folder):
         print("ERROR " + abs_folder + " not found.")
@@ -55,9 +57,9 @@ def find_files_in_folder(folder, sub_folder, include_list, extension, sought_exc
         li = '#include "../' + sub_folder_slashed + file + '"'
 
         if not simple_name in sought_exceptions:
-            include_list += [li]
+            include_list.append(li)
         else:
-            found_exceptions += [li]
+            found_exceptions.append(li)
 
     return include_list, found_exceptions
 
@@ -82,8 +84,6 @@ def write_output_file(file_count, include_list, start_line, end_line, output_fol
             li = line + "\n"
             file_text += li
 
-    # print(file_text)
-
     num_string = ""
     if file_count > 0:
         num_string = "_" + str(file_count)
@@ -93,11 +93,8 @@ def write_output_file(file_count, include_list, start_line, end_line, output_fol
     if _verbose:
         print("generating: " + short_filename)
 
-    # return
-    output_file = open(output_filename, "w")
-    if not output_file.closed:
-        output_file.write(file_text)
-        output_file.close()
+    output_path = Path(output_filename)
+    output_path.write_text(file_text, encoding="utf8")
 
 
 def write_exception_output_file(file_count, exception_string, output_folder, output_filename_prefix, extension):
@@ -118,17 +115,13 @@ def write_exception_output_file(file_count, exception_string, output_folder, out
     if _verbose:
         print("generating: " + short_filename)
 
-    # print("text: " + file_text)
-    # return
-    output_file = open(output_filename, "w")
-    if not output_file.closed:
-        output_file.write(file_text)
-        output_file.close()
+    output_path = Path(output_filename)
+    output_path.write_text(file_text, encoding="utf8")
 
 
 def find_section_name(sub_folder):
     # Construct a useful name for the section from the path for debug logging
-    section_path = os.path.abspath(base_folder + sub_folder) + "/"
+    section_path = os.path.abspath(base_folder_path + sub_folder) + "/"
 
     folders = []
     folder = ""
@@ -136,11 +129,9 @@ def find_section_name(sub_folder):
     for i in range(8):
         folder = os.path.dirname(section_path)
         folder = os.path.basename(folder)
-        if folder == "godot":
+        if folder == base_folder_only:
             break
-        if folder == "godot-plus":
-            break
-        folders += [folder]
+        folders.append(folder)
         section_path += "../"
         section_path = os.path.abspath(section_path) + "/"
 
@@ -157,7 +148,8 @@ def find_section_name(sub_folder):
 # "section (like a module)". The name of the scu file will be derived from the first folder
 # (thus e.g. scene/3d becomes scu_scene_3d.gen.cpp)
 
-# "num_output_files" allows the scu to be built in several translation units instead of just 1.
+# "includes_per_scu" limits the number of includes in a single scu file.
+# This allows the module to be built in several translation units instead of just 1.
 # This will usually be slower to compile but will use less memory per compiler instance, which
 # is most relevant in release builds.
 
@@ -180,7 +172,12 @@ def process_folder(folders, sought_exceptions=[], includes_per_scu=0, extension=
     found_exceptions = []
 
     main_folder = folders[0]
-    abs_main_folder = base_folder + main_folder
+    abs_main_folder = base_folder_path + main_folder
+
+    # Keep a record of all folders that have been processed for SCU,
+    # this enables deciding what to do when we call "add_source_files()"
+    global _scu_folders
+    _scu_folders.add(main_folder)
 
     # main folder (first)
     found_includes, found_exceptions = find_files_in_folder(
@@ -259,13 +256,11 @@ def generate_scu_files(verbose, is_release_build):
     global _is_release_build
     _is_release_build = is_release_build
 
-    # check we are running from the correct folder
     curr_folder = os.path.abspath("./")
-    parent_path = basename(normpath(curr_folder))
 
-    # if (parent_path != "godot") and (parent_path != "godot-plus"):
+    # check we are running from the correct folder
     if folder_not_found("core") or folder_not_found("platform") or folder_not_found("scene"):
-        print("ERROR - ensure scu_builders.py is run from the godot folder.")
+        raise RuntimeError("scu_builders.py must be run from the godot folder.")
         return
 
     process_folder(["core"])
@@ -386,3 +381,5 @@ def generate_scu_files(verbose, is_release_build):
 
     # Finally change back the path to the calling folder
     os.chdir(curr_folder)
+
+    return _scu_folders

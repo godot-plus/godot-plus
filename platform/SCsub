@@ -29,7 +29,7 @@ with open_utf8("register_platform_apis.gen.cpp", "w") as f:
 env.add_source_files(env.platform_sources, "register_platform_apis.gen.cpp")
 
 if env["tools"]:
-    env.add_source_files_scu(env.platform_sources, "*.cpp")
+    env.add_source_files(env.platform_sources, "*.cpp")
 
 lib = env.add_library("platform", env.platform_sources)
 env.Prepend(LIBS=[lib])

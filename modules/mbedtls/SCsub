@@ -116,7 +116,7 @@ if env["builtin_mbedtls"]:
 
 module_obj = []
 
-env_mbed_tls.add_source_files_scu(module_obj, "*.cpp")
+env_mbed_tls.add_source_files(module_obj, "*.cpp")
 
 env.modules_sources += module_obj
 
