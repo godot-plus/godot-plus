@@ -238,7 +238,7 @@ bool InputDefault::is_action_pressed(const StringName &p_action, bool p_exact) c
 	return action_state.has(p_action) && action_state[p_action].pressed && (p_exact ? action_state[p_action].exact : true);
 }
 
-bool InputDefault::is_action_just_pressed(const StringName &p_action, bool p_exact, bool p_current) const {
+bool InputDefault::is_action_just_pressed(const StringName &p_action, bool p_exact) const {
 	ERR_FAIL_COND_V_MSG(!InputMap::get_singleton()->has_action(p_action), false, InputMap::get_singleton()->suggest_actions(p_action));
 	const Map<StringName, Action>::Element *E = action_state.find(p_action);
 	if (!E) {
@@ -250,13 +250,13 @@ bool InputDefault::is_action_just_pressed(const StringName &p_action, bool p_exa
 	}
 
 	if (Engine::get_singleton()->is_in_physics_frame()) {
-		return p_current ? E->get().pressed : true && E->get().pressed_physics_frame == Engine::get_singleton()->get_physics_frames();
+		return E->get().pressed_physics_frame == Engine::get_singleton()->get_physics_frames();
 	} else {
-		return p_current ? E->get().pressed : true && E->get().pressed_idle_frame == Engine::get_singleton()->get_idle_frames();
+		return E->get().pressed_idle_frame == Engine::get_singleton()->get_idle_frames();
 	}
 }
 
-bool InputDefault::is_action_just_released(const StringName &p_action, bool p_exact, bool p_current) const {
+bool InputDefault::is_action_just_released(const StringName &p_action, bool p_exact) const {
 	ERR_FAIL_COND_V_MSG(!InputMap::get_singleton()->has_action(p_action), false, InputMap::get_singleton()->suggest_actions(p_action));
 	const Map<StringName, Action>::Element *E = action_state.find(p_action);
 	if (!E) {
@@ -268,9 +268,9 @@ bool InputDefault::is_action_just_released(const StringName &p_action, bool p_ex
 	}
 
 	if (Engine::get_singleton()->is_in_physics_frame()) {
-		return p_current ? !E->get().pressed : true && E->get().released_physics_frame == Engine::get_singleton()->get_physics_frames();
+		return E->get().released_physics_frame == Engine::get_singleton()->get_physics_frames();
 	} else {
-		return p_current ? !E->get().pressed : true && E->get().released_idle_frame == Engine::get_singleton()->get_idle_frames();
+		return E->get().released_idle_frame == Engine::get_singleton()->get_idle_frames();
 	}
 }
 
