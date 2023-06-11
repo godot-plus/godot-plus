@@ -86,7 +86,7 @@ def _find_scu_section_name(subdir):
 
 
 def add_source_files_scu(self, sources, files, allow_gen=False):
-    if self["use_scu"] and isinstance(files, str):
+    if self["scu_build"] and isinstance(files, str):
         if "*." not in files:
             return False
 
@@ -123,7 +123,7 @@ def add_source_files(self, sources, files, allow_gen=False):
 
 
 def scu_get_files(self, source_tree_path, subfolder="", depth=2):
-    if self["use_scu"]:
+    if self["scu_build"]:
         # translate source tree to relative path
         path = ""
         for n in range(depth):
