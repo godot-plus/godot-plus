@@ -13,7 +13,7 @@ thirdparty_obj = []
 
 if env["builtin_freetype"]:
     thirdparty_dir = "#thirdparty/freetype/"
-    if env["use_scu"]:
+    if env["scu_build"]:
         print("SCU building thirdparty freetype")
         thirdparty_sources = [
             "scu_thirdparty_freetype.c",

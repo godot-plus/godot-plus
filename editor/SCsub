@@ -32,7 +32,7 @@ if env["tools"]:
     reg_exporters = "void register_exporters() {\n"
     for e in env.platform_exporters:
         # Glob all .cpp files in export folder
-        if not env["use_scu"]:
+        if not env["scu_build"]:
             files = Glob("#platform/" + e + "/export/" + "*.cpp")
             env.add_source_files(env.editor_sources, files)
 

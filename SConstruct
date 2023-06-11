@@ -330,8 +330,6 @@ if env_base["target"] == "release_debug" or env_base["target"] == "debug":
     # to give *users* extra debugging information for their game development.
     env_base.Append(CPPDEFINES=["DEBUG_ENABLED"])
 
-env_base["use_scu"] = env_base["scu_build"] == True
-
 if env_base["target"] == "debug":
     # DEV_ENABLED enables *engine developer* code which should only be compiled for those
     # working on the engine itself.
@@ -448,7 +446,7 @@ if selected_platform in platform_list:
             )
 
     # Run SCU file generation script if in a SCU build.
-    if env["use_scu"]:
+    if env["scu_build"]:
         methods.set_scu_folders(scu_builders.generate_scu_files(env["verbose"], env_base["target"] != "debug"))
 
     # Must happen after the flags' definition, as configure is when most flags
