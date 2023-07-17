@@ -1215,6 +1215,7 @@ public:
 				memdelete(skinning_data);
 				skinning_data = nullptr;
 			}
+			on_interpolate_transform_list = false;
 		}
 		Item() {
 			light_mask = 1;
