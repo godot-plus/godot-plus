@@ -473,6 +473,7 @@ void VisualServerCanvas::_render_canvas_item_cull_by_node(Item *p_canvas_item, c
 		real_t f = Engine::get_singleton()->get_physics_interpolation_fraction();
 		TransformInterpolator::interpolate_transform2D(ci->xform_prev, ci->xform_curr, final_xform, f);
 	}
+
 	final_xform = p_transform * final_xform;
 
 	Rect2 global_rect = final_xform.xform(rect);

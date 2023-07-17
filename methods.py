@@ -107,7 +107,7 @@ def add_source_files_scu(self, sources, files, allow_gen=False):
             print("SCU building " + section_name)
 
         # Add all the gen.cpp files in the SCU directory
-        add_source_files_orig(self, sources, subdir + "scu/scu_*.gen.cpp", True)
+        add_source_files_orig(self, sources, subdir + ".scu/scu_*.gen.cpp", True)
         return True
     return False
 
@@ -142,12 +142,12 @@ def scu_get_files(self, source_tree_path, subfolder="", depth=2):
         path += "scu/"
         found = []
 
-        for file in glob.glob("scu/*.cpp"):
+        for file in glob.glob(".scu/*.cpp"):
             if self["verbose"]:
                 print("found file " + file)
             found += [subfolder + file]
 
-        for file in glob.glob("scu/*.c"):
+        for file in glob.glob(".scu/*.c"):
             if self["verbose"]:
                 print("found file " + file)
             found += [subfolder + file]

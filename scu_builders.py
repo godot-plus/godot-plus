@@ -54,7 +54,7 @@ def find_files_in_folder(folder, sub_folder, include_list, extension, sought_exc
         if file.endswith(".gen.cpp"):
             continue
 
-        li = '#include "../' + sub_folder_slashed + file + '"'
+        li = '#include "' + folder + "/" + sub_folder_slashed + file + '"'
 
         if not simple_name in sought_exceptions:
             include_list.append(li)
@@ -216,7 +216,7 @@ def process_folder(folders, sought_exceptions=[], includes_per_scu=0, extension=
     file_number = 0
 
     # These do not vary throughout the loop
-    output_folder = abs_main_folder + "/scu/"
+    output_folder = abs_main_folder + "/.scu/"
     output_filename_prefix = "scu_" + out_filename
 
     # Clear out any existing files (usually we will be overwriting,

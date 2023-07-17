@@ -78,6 +78,7 @@ class InputDefault : public Input {
 	Vector3 gyroscope;
 	Vector2 mouse_pos;
 	MainLoop *main_loop;
+	bool legacy_just_pressed_behavior = false;
 
 	struct Action {
 		uint64_t pressed_physics_frame = UINT64_MAX;
@@ -86,8 +87,8 @@ class InputDefault : public Input {
 		uint64_t released_idle_frame = UINT64_MAX;
 		bool pressed = false;
 		bool exact = true;
-		float strength = 0;
-		float raw_strength = 0;
+		float strength = 0.0f;
+		float raw_strength = 0.0f;
 	};
 
 	Map<StringName, Action> action_state;

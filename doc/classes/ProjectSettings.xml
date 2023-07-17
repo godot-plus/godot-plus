@@ -680,6 +680,11 @@
 		<member name="input_devices/buffering/legacy_event_flushing" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], input events will be flushed at the end of the mainloop, instead of at the start.
 		</member>
+		<member name="input_devices/compatibility/legacy_just_pressed_behavior" type="bool" setter="" getter="" default="false">
+			If [code]true[/code], [method Input.is_action_just_pressed] and [method Input.is_action_just_released] will only return [code]true[/code] if the action is still in the respective state, i.e. an action that is pressed [i]and[/i] released on the same frame will be missed.
+			If [code]false[/code], no input will be lost.
+			[b]Note:[/b] You should in nearly all cases prefer the [code]false[/code] setting. The legacy behavior is to enable supporting old projects that rely on the old logic, without changes to script.
+		</member>
 		<member name="input_devices/pointing/emulate_mouse_from_touch" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], sends mouse input events when tapping or swiping on the touchscreen.
 		</member>
