@@ -32,6 +32,7 @@
 
 #include "core/input_map.h"
 #include "core/os/os.h"
+#include "core/project_settings.h"
 #include "main/default_controller_mappings.h"
 #include "scene/resources/texture.h"
 #include "servers/visual_server.h"
@@ -249,10 +250,13 @@ bool InputDefault::is_action_just_pressed(const StringName &p_action, bool p_exa
 		return false;
 	}
 
+	// Backward compatibility for legacy behavior, only return true if currently pressed.
+	bool pressed_requirement = legacy_just_pressed_behavior ? E->get().pressed : true;
+
 	if (Engine::get_singleton()->is_in_physics_frame()) {
-		return E->get().pressed_physics_frame == Engine::get_singleton()->get_physics_frames();
+		return pressed_requirement && E->get().pressed_physics_frame == Engine::get_singleton()->get_physics_frames();
 	} else {
-		return E->get().pressed_idle_frame == Engine::get_singleton()->get_idle_frames();
+		return pressed_requirement && E->get().pressed_idle_frame == Engine::get_singleton()->get_idle_frames();
 	}
 }
 
@@ -267,10 +271,13 @@ bool InputDefault::is_action_just_released(const StringName &p_action, bool p_ex
 		return false;
 	}
 
+	// Backward compatibility for legacy behavior, only return true if currently released.
+	bool released_requirement = legacy_just_pressed_behavior ? !E->get().pressed : true;
+
 	if (Engine::get_singleton()->is_in_physics_frame()) {
-		return E->get().released_physics_frame == Engine::get_singleton()->get_physics_frames();
+		return released_requirement && E->get().released_physics_frame == Engine::get_singleton()->get_physics_frames();
 	} else {
-		return E->get().released_idle_frame == Engine::get_singleton()->get_idle_frames();
+		return released_requirement && E->get().released_idle_frame == Engine::get_singleton()->get_idle_frames();
 	}
 }
 
@@ -648,8 +655,8 @@ void InputDefault::_parse_input_event_impl(const Ref<InputEvent> &p_event, bool 
 					action.released_physics_frame = Engine::get_singleton()->get_physics_frames();
 					action.released_idle_frame = Engine::get_singleton()->get_idle_frames();
 				}
-				action.strength = 0;
-				action.raw_strength = 0;
+				action.strength = 0.0f;
+				action.raw_strength = 0.0f;
 				action.exact = InputMap::get_singleton()->event_is_action(p_event, E->key(), true);
 			}
 
@@ -785,9 +792,9 @@ void InputDefault::action_press(const StringName &p_action, float p_strength) {
 	action.pressed_physics_frame = Engine::get_singleton()->get_physics_frames();
 	action.pressed_idle_frame = Engine::get_singleton()->get_idle_frames();
 	action.pressed = true;
+	action.exact = true;
 	action.strength = p_strength;
 	action.raw_strength = p_strength;
-	action.exact = true;
 }
 
 void InputDefault::action_release(const StringName &p_action) {
@@ -798,6 +805,8 @@ void InputDefault::action_release(const StringName &p_action) {
 	action.released_idle_frame = Engine::get_singleton()->get_idle_frames();
 	action.pressed = false;
 	action.exact = true;
+	action.strength = 0.0f;
+	action.raw_strength = 0.0f;
 }
 
 void InputDefault::set_emulate_touch_from_mouse(bool p_emulate) {
@@ -942,6 +951,12 @@ InputDefault::InputDefault() {
 	default_shape = CURSOR_ARROW;
 
 	fallback_mapping = -1;
+
+	legacy_just_pressed_behavior = GLOBAL_DEF("input_devices/compatibility/legacy_just_pressed_behavior", false);
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Always use standard behaviour in the editor.
+		legacy_just_pressed_behavior = false;
+	}
 
 	// Parse default mappings.
 	{

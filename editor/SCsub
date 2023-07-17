@@ -40,6 +40,10 @@ if env["tools"]:
         reg_exporters_inc += '#include "platform/' + e + '/export/export.h"\n'
     reg_exporters += "}\n"
 
+    # If we are in a SCU build, we add all the platform exporters in one SCU file.
+    if env["scu_build"]:
+        env.add_source_files(env.editor_sources, "../platform/*.cpp")
+
     # NOTE: It is safe to generate this file here, since this is still executed serially
     with open_utf8("register_exporters.gen.cpp", "w") as f:
         f.write(reg_exporters_inc)
