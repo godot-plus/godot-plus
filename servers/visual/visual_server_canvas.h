@@ -170,6 +170,7 @@ private:
 
 	RasterizerCanvas::Item **z_list;
 	RasterizerCanvas::Item **z_last_list;
+	Transform2D _current_camera_transform;
 
 	// 3.5 and earlier had no hierarchical culling.
 	void _render_canvas_item_cull_by_item(Item *p_canvas_item, const Transform2D &p_transform, const Rect2 &p_clip_rect, const Color &p_modulate, int p_z, RasterizerCanvas::Item **z_list, RasterizerCanvas::Item **z_last_list, Item *p_canvas_clip, Item *p_material_owner);
@@ -226,6 +227,7 @@ public:
 	void canvas_item_set_self_modulate(RID p_item, const Color &p_color);
 
 	void canvas_item_set_draw_behind_parent(RID p_item, bool p_enable);
+	void canvas_item_set_ignore_parent_transform(RID p_item, bool p_enable);
 
 	void canvas_item_set_update_when_visible(RID p_item, bool p_update);
 
@@ -264,6 +266,9 @@ public:
 	void canvas_item_set_interpolated(RID p_item, bool p_interpolated);
 	void canvas_item_reset_physics_interpolation(RID p_item);
 	void canvas_item_transform_physics_interpolation(RID p_item, Transform2D p_transform);
+
+	void _canvas_item_invalidate_local_bound(RID p_item);
+	void _canvas_item_remove_references(RID p_item, RID p_rid);
 
 	RID canvas_light_create();
 	void canvas_light_attach_to_canvas(RID p_light, RID p_canvas);

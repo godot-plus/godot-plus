@@ -148,7 +148,6 @@ void VisualServerRaster::tick() {
 
 void VisualServerRaster::pre_draw(bool p_will_draw) {
 	VSG::scene->pre_draw(p_will_draw);
-	// VSG::canvas->pre_draw(p_will_draw);
 }
 
 bool VisualServerRaster::has_changed(ChangedPriority p_priority) const {

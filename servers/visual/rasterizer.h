@@ -395,6 +395,7 @@ public:
 	virtual void multimesh_set_visible_instances(RID p_multimesh, int p_visible);
 	virtual int multimesh_get_visible_instances(RID p_multimesh) const;
 	virtual AABB multimesh_get_aabb(RID p_multimesh) const;
+	virtual void multimesh_attach_canvas_item(RID p_multimesh, RID p_canvas_item, bool p_attach) = 0;
 
 	virtual RID _multimesh_create() = 0;
 	virtual void _multimesh_allocate(RID p_multimesh, int p_instances, VS::MultimeshTransformFormat p_transform_format, VS::MultimeshColorFormat p_color_format, VS::MultimeshCustomDataFormat p_data = VS::MULTIMESH_CUSTOM_DATA_NONE) = 0;
@@ -817,6 +818,8 @@ public:
 				TYPE_MULTIRECT,
 			};
 
+			virtual bool contains_reference(const RID &p_rid) const { return false; }
+
 			Type type;
 			virtual ~Command() {}
 		};
@@ -946,7 +949,15 @@ public:
 			RID multimesh;
 			RID texture;
 			RID normal_map;
+			RID canvas_item;
+			virtual bool contains_reference(const RID &p_rid) const { return multimesh == p_rid; }
 			CommandMultiMesh() { type = TYPE_MULTIMESH; }
+			virtual ~CommandMultiMesh() {
+				// Remove any backlinks from multimesh to canvas item.
+				if (multimesh.is_valid()) {
+					RasterizerStorage::base_singleton->multimesh_attach_canvas_item(multimesh, canvas_item, false);
+				}
+			}
 		};
 
 		struct CommandParticles : public Command {
@@ -995,6 +1006,7 @@ public:
 		bool light_masked : 1;
 		bool on_interpolate_transform_list : 1;
 		bool interpolated : 1;
+		bool ignore_parent_xform : 1;
 		mutable bool custom_rect : 1;
 		mutable bool rect_dirty : 1;
 		mutable bool bound_dirty : 1;
@@ -1032,6 +1044,11 @@ public:
 
 		Rect2 global_rect_cache;
 
+	private:
+		Rect2 calculate_polygon_bounds(const Item::CommandPolygon &p_polygon) const;
+		void precalculate_polygon_bone_bounds(const Item::CommandPolygon &p_polygon) const;
+
+	public:
 		// the rect containing this item and all children,
 		// in local space.
 		Rect2 local_bound;
@@ -1043,11 +1060,6 @@ public:
 		Rect2 local_bound_prev;
 		uint32_t local_bound_last_update_tick;
 
-	private:
-		Rect2 calculate_polygon_bounds(const Item::CommandPolygon &p_polygon) const;
-		void precalculate_polygon_bone_bounds(const Item::CommandPolygon &p_polygon) const;
-
-	public:
 		const Rect2 &get_rect() const {
 			if (custom_rect) {
 				return rect;
@@ -1199,6 +1211,20 @@ public:
 			return rect;
 		}
 
+		void remove_references(const RID &p_rid) {
+			for (int i = commands.size() - 1; i >= 0; i--) {
+				if (commands[i]->contains_reference(p_rid)) {
+					memdelete(commands[i]);
+
+					// This could possibly be unordered if occurring close
+					// to canvas_item deletion, but is
+					// unlikely to make much performance difference,
+					// and is safer.
+					commands.remove(i);
+				}
+			}
+		}
+
 		void clear() {
 			for (int i = 0; i < commands.size(); i++) {
 				memdelete(commands[i]);
@@ -1237,6 +1263,7 @@ public:
 			update_when_visible = false;
 			on_interpolate_transform_list = false;
 			interpolated = true;
+			ignore_parent_xform = false;
 			local_bound_last_update_tick = 0;
 		}
 		virtual ~Item() {

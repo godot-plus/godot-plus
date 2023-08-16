@@ -81,7 +81,7 @@ void Camera2D::_update_process_mode() {
 		}
 #endif
 	} else {
-		// smoothing can be enabled in the editor but will never be active
+		// Smoothing can be enabled in the editor but will never be active.
 		if (process_mode == CAMERA2D_PROCESS_IDLE) {
 			set_process_internal(smoothing_active);
 			set_physics_process_internal(false);
@@ -193,6 +193,13 @@ Transform2D Camera2D::get_camera_transform() {
 			}
 		}
 
+		// TODO ..
+		// There is a bug here.
+		// Smoothing occurs rather confusingly
+		// during the call to get_camera_transform().
+		// It may be called MULTIPLE TIMES on certain frames,
+		// therefore smoothing is not currently applied only once per frame / tick,
+		// which will result in some haphazard results.
 		if (smoothing_active) {
 			// Note that if we are using physics interpolation,
 			// processing will always be physics based (it ignores the process mode set in the UI).
@@ -253,6 +260,23 @@ Transform2D Camera2D::get_camera_transform() {
 	return (xform).affine_inverse();
 }
 
+void Camera2D::_ensure_update_interpolation_data() {
+	// The curr -> previous update can either occur
+	// on the INTERNAL_PHYSICS_PROCESS OR
+	// on NOTIFICATION_TRANSFORM_CHANGED,
+	// if NOTIFICATION_TRANSFORM_CHANGED takes place
+	// earlier than INTERNAL_PHYSICS_PROCESS on a tick.
+	// This is to ensure that the data keeps flowing, but the new data
+	// doesn't overwrite before prev has been set.
+
+	// Keep the data flowing.
+	uint64_t tick = Engine::get_singleton()->get_physics_frames();
+	if (_interpolation_data.last_update_physics_tick != tick) {
+		_interpolation_data.xform_prev = _interpolation_data.xform_curr;
+		_interpolation_data.last_update_physics_tick = tick;
+	}
+}
+
 void Camera2D::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_INTERNAL_PROCESS: {
@@ -260,18 +284,24 @@ void Camera2D::_notification(int p_what) {
 		} break;
 		case NOTIFICATION_INTERNAL_PHYSICS_PROCESS: {
 			if (is_physics_interpolated_and_enabled()) {
-				_interpolation_data.xform_prev = _interpolation_data.xform_curr;
+				_ensure_update_interpolation_data();
 				_interpolation_data.xform_curr = get_camera_transform();
 			} else {
 				_update_scroll();
 			}
 		} break;
 		case NOTIFICATION_RESET_PHYSICS_INTERPOLATION: {
+			// Force the limits etc to update.
+			_interpolation_data.xform_curr = get_camera_transform();
 			_interpolation_data.xform_prev = _interpolation_data.xform_curr;
 		} break;
 		case NOTIFICATION_TRANSFORM_CHANGED: {
 			if (!smoothing_active && !is_physics_interpolated_and_enabled()) {
 				_update_scroll();
+			}
+			if (is_physics_interpolated_and_enabled()) {
+				_ensure_update_interpolation_data();
+				_interpolation_data.xform_curr = get_camera_transform();
 			}
 
 		} break;
