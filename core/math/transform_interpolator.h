@@ -76,7 +76,7 @@ public:
 	// These will be slower.
 	static void interpolate_transform(const Transform &p_prev, const Transform &p_curr, Transform &r_result, real_t p_fraction);
 	static void interpolate_basis(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction);
-	static void interpolate_transform2D(const Transform2D &p_prev, const Transform2D &p_curr, Transform2D &r_result, real_t p_fraction);
+	static void interpolate_transform_2d(const Transform2D &p_prev, const Transform2D &p_curr, Transform2D &r_result, real_t p_fraction);
 
 	// Optimized function when you know ahead of time the method
 	static void interpolate_transform_via_method(const Transform &p_prev, const Transform &p_curr, Transform &r_result, real_t p_fraction, Method p_method);

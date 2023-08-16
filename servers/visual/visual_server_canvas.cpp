@@ -40,6 +40,8 @@ void VisualServerCanvas::_render_canvas_item_tree(Item *p_canvas_item, const Tra
 	memset(z_list, 0, z_range * sizeof(RasterizerCanvas::Item *));
 	memset(z_last_list, 0, z_range * sizeof(RasterizerCanvas::Item *));
 
+	_current_camera_transform = p_transform;
+
 	if (_canvas_cull_mode == CANVAS_CULL_MODE_NODE) {
 		_prepare_tree_bounds(p_canvas_item);
 		_render_canvas_item_cull_by_node(p_canvas_item, p_transform, p_clip_rect, Color(1, 1, 1, 1), 0, z_list, z_last_list, nullptr, nullptr, false);
@@ -335,9 +337,14 @@ void VisualServerCanvas::_render_canvas_item_cull_by_item(Item *p_canvas_item, c
 		final_xform = ci->xform_curr;
 	} else {
 		real_t f = Engine::get_singleton()->get_physics_interpolation_fraction();
-		TransformInterpolator::interpolate_transform2D(ci->xform_prev, ci->xform_curr, final_xform, f);
+		TransformInterpolator::interpolate_transform_2d(ci->xform_prev, ci->xform_curr, final_xform, f);
 	}
-	final_xform = p_transform * final_xform;
+
+	if (!p_canvas_item->ignore_parent_xform) {
+		final_xform = p_transform * final_xform;
+	} else {
+		final_xform = _current_camera_transform * final_xform;
+	}
 
 	Rect2 global_rect = final_xform.xform(rect);
 	global_rect.position += p_clip_rect.position;
@@ -471,9 +478,14 @@ void VisualServerCanvas::_render_canvas_item_cull_by_node(Item *p_canvas_item, c
 		final_xform = ci->xform_curr;
 	} else {
 		real_t f = Engine::get_singleton()->get_physics_interpolation_fraction();
-		TransformInterpolator::interpolate_transform2D(ci->xform_prev, ci->xform_curr, final_xform, f);
+		TransformInterpolator::interpolate_transform_2d(ci->xform_prev, ci->xform_curr, final_xform, f);
 	}
-	final_xform = p_transform * final_xform;
+
+	if (!p_canvas_item->ignore_parent_xform) {
+		final_xform = p_transform * final_xform;
+	} else {
+		final_xform = _current_camera_transform * final_xform;
+	}
 
 	Rect2 global_rect = final_xform.xform(rect);
 	ci->global_rect_cache = global_rect;
@@ -666,6 +678,8 @@ void VisualServerCanvas::render_canvas(Canvas *p_canvas, const Transform2D &p_tr
 
 		memset(z_list, 0, z_range * sizeof(RasterizerCanvas::Item *));
 		memset(z_last_list, 0, z_range * sizeof(RasterizerCanvas::Item *));
+
+		_current_camera_transform = p_transform;
 
 #ifdef VISUAL_SERVER_CANVAS_TIME_NODE_CULLING
 		bool measure = (Engine::get_singleton()->get_frames_drawn() % 100) == 0;
@@ -939,6 +953,14 @@ void VisualServerCanvas::canvas_item_set_draw_behind_parent(RID p_item, bool p_e
 
 	canvas_item->behind = p_enable;
 	_check_bound_integrity(canvas_item);
+}
+
+void VisualServerCanvas::canvas_item_set_ignore_parent_transform(RID p_item, bool p_enable) {
+	Item *canvas_item = canvas_item_owner.getornull(p_item);
+	ERR_FAIL_COND(!canvas_item);
+
+	canvas_item->ignore_parent_xform = p_enable;
+	_make_bound_dirty(canvas_item);
 }
 
 void VisualServerCanvas::canvas_item_set_update_when_visible(RID p_item, bool p_update) {
@@ -1421,10 +1443,17 @@ void VisualServerCanvas::canvas_item_add_multimesh(RID p_item, RID p_mesh, RID p
 	mm->multimesh = p_mesh;
 	mm->texture = p_texture;
 	mm->normal_map = p_normal_map;
+	mm->canvas_item = p_item;
 
 	canvas_item->rect_dirty = true;
 	canvas_item->commands.push_back(mm);
 	_make_bound_dirty(canvas_item);
+
+	// Attach to multimesh a backlink to enable updating
+	// the canvas item local bound when the multimesh changes.
+	if (p_mesh.is_valid()) {
+		VSG::storage->multimesh_attach_canvas_item(p_mesh, p_item, true);
+	}
 }
 
 void VisualServerCanvas::canvas_item_add_clip_ignore(RID p_item, bool p_ignore) {
@@ -1588,7 +1617,16 @@ void VisualServerCanvas::canvas_item_attach_skeleton(RID p_item, RID p_skeleton)
 	}
 }
 
-void VisualServerCanvas::_canvas_item_skeleton_moved(RID p_item) {
+// Canvas items may contain references to other resources (such as MultiMesh).
+// If the resources are deleted first, and the canvas_item retains references, it
+// will crash / error when it tries to access these.
+void VisualServerCanvas::_canvas_item_remove_references(RID p_item, RID p_rid) {
+	Item *canvas_item = canvas_item_owner.getornull(p_item);
+	ERR_FAIL_COND(!canvas_item);
+	canvas_item->remove_references(p_rid);
+}
+
+void VisualServerCanvas::_canvas_item_invalidate_local_bound(RID p_item) {
 	Item *canvas_item = canvas_item_owner.getornull(p_item);
 	ERR_FAIL_COND(!canvas_item);
 	_make_bound_dirty(canvas_item);
@@ -2248,7 +2286,7 @@ void VisualServerCanvas::InterpolationData::notify_free_canvas_item(RID p_rid, V
 		return;
 	}
 
-	// if the instance was on any of the lists, remove
+	// If the instance was on any of the lists, remove.
 	canvas_item_transform_update_list_curr->erase_multiple_unordered(p_rid);
 	canvas_item_transform_update_list_prev->erase_multiple_unordered(p_rid);
 }
@@ -2260,7 +2298,7 @@ void VisualServerCanvas::InterpolationData::notify_free_canvas_light(RID p_rid, 
 		return;
 	}
 
-	// if the instance was on any of the lists, remove
+	// If the instance was on any of the lists, remove.
 	canvas_light_transform_update_list_curr->erase_multiple_unordered(p_rid);
 	canvas_light_transform_update_list_prev->erase_multiple_unordered(p_rid);
 }
@@ -2272,7 +2310,7 @@ void VisualServerCanvas::InterpolationData::notify_free_canvas_light_occluder(RI
 		return;
 	}
 
-	// if the instance was on any of the lists, remove
+	// If the instance was on any of the lists, remove.
 	canvas_light_occluder_transform_update_list_curr->erase_multiple_unordered(p_rid);
 	canvas_light_occluder_transform_update_list_prev->erase_multiple_unordered(p_rid);
 }

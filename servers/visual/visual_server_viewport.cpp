@@ -140,7 +140,7 @@ void VisualServerViewport::_draw_viewport(Viewport *p_viewport, ARVRInterface::E
 						cl->xform_cache = xf * cl->xform_curr;
 					} else {
 						real_t f = Engine::get_singleton()->get_physics_interpolation_fraction();
-						TransformInterpolator::interpolate_transform2D(cl->xform_prev, cl->xform_curr, cl->xform_cache, f);
+						TransformInterpolator::interpolate_transform_2d(cl->xform_prev, cl->xform_curr, cl->xform_cache, f);
 						cl->xform_cache = xf * cl->xform_cache;
 					}
 
@@ -196,7 +196,7 @@ void VisualServerViewport::_draw_viewport(Viewport *p_viewport, ARVRInterface::E
 						occluder->xform_cache = xf * occluder->xform_curr;
 					} else {
 						real_t f = Engine::get_singleton()->get_physics_interpolation_fraction();
-						TransformInterpolator::interpolate_transform2D(occluder->xform_prev, occluder->xform_curr, occluder->xform_cache, f);
+						TransformInterpolator::interpolate_transform_2d(occluder->xform_prev, occluder->xform_curr, occluder->xform_cache, f);
 						occluder->xform_cache = xf * occluder->xform_cache;
 					}
 

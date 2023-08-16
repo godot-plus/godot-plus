@@ -32,8 +32,8 @@
 
 #include "core/math/transform_2d.h"
 
-void TransformInterpolator::interpolate_transform2D(const Transform2D &p_prev, const Transform2D &p_curr, Transform2D &r_result, real_t p_fraction) {
-	//extract parameters
+void TransformInterpolator::interpolate_transform_2d(const Transform2D &p_prev, const Transform2D &p_curr, Transform2D &r_result, real_t p_fraction) {
+	// Extract parameters.
 	Vector2 p1 = p_prev.get_origin();
 	Vector2 p2 = p_curr.get_origin();
 
@@ -52,7 +52,7 @@ void TransformInterpolator::interpolate_transform2D(const Transform2D &p_prev, c
 	Size2 s1 = p_prev.get_scale();
 	Size2 s2 = p_curr.get_scale();
 
-	//slerp rotation
+	// Slerp rotation.
 	Vector2 v1(Math::cos(r1), Math::sin(r1));
 	Vector2 v2(Math::cos(r2), Math::sin(r2));
 
@@ -63,14 +63,14 @@ void TransformInterpolator::interpolate_transform2D(const Transform2D &p_prev, c
 	Vector2 v;
 
 	if (dot > 0.9995f) {
-		v = Vector2::linear_interpolate(v1, v2, p_fraction).normalized(); //linearly interpolate to avoid numerical precision issues
+		v = Vector2::linear_interpolate(v1, v2, p_fraction).normalized(); // Linearly interpolate to avoid numerical precision issues.
 	} else {
 		real_t angle = p_fraction * Math::acos(dot);
 		Vector2 v3 = (v2 - v1 * dot).normalized();
 		v = v1 * Math::cos(angle) + v3 * Math::sin(angle);
 	}
 
-	//construct matrix
+	// Construct matrix.
 	r_result = Transform2D(Math::atan2(v.y, v.x), Vector2::linear_interpolate(p1, p2, p_fraction));
 	r_result.scale_basis(Vector2::linear_interpolate(s1, s2, p_fraction));
 }

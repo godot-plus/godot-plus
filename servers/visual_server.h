@@ -1027,6 +1027,7 @@ public:
 	virtual void canvas_item_set_self_modulate(RID p_item, const Color &p_color) = 0;
 
 	virtual void canvas_item_set_draw_behind_parent(RID p_item, bool p_enable) = 0;
+	virtual void canvas_item_set_ignore_parent_transform(RID p_item, bool p_enable) = 0;
 
 	enum NinePatchAxisMode {
 		NINE_PATCH_STRETCH,
@@ -1062,6 +1063,7 @@ public:
 
 	virtual void canvas_item_attach_skeleton(RID p_item, RID p_skeleton) = 0;
 	virtual void canvas_item_set_skeleton_relative_xform(RID p_item, Transform2D p_relative_xform) = 0;
+
 #ifdef TOOLS_ENABLED
 	Rect2 debug_canvas_item_get_rect(RID p_item) { return _debug_canvas_item_get_rect(p_item); }
 	Rect2 debug_canvas_item_get_local_bound(RID p_item) { return _debug_canvas_item_get_local_bound(p_item); }
@@ -1069,7 +1071,6 @@ public:
 	Rect2 debug_canvas_item_get_rect(RID p_item) { return Rect2(); }
 	Rect2 debug_canvas_item_get_local_bound(RID p_item) { return Rect2(); }
 #endif
-
 	virtual Rect2 _debug_canvas_item_get_rect(RID p_item) = 0;
 	virtual Rect2 _debug_canvas_item_get_local_bound(RID p_item) = 0;
 
